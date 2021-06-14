@@ -13,8 +13,9 @@ from orthogonal import OrthogonalHouseholder, OrthogonalHouseholderAlternative
 device = torch.device("cuda")
 
 def normalize(module):
-    if module is OrthogonalHouseholder:
-        module.A /= torch.sqrt((module.A * module.A).sum(dim=1))
+    with torch.no_grad():
+        if module is OrthogonalHouseholder:
+            module.A /= torch.sqrt((module.A * module.A).sum(dim=1))
 
 class Classfier(nn.Module):
     def __init__(self, in_sz, out_sz, hidden_sz, hidden_layers_factory, hiddens_num):

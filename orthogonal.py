@@ -88,7 +88,7 @@ class MyLinear(nn.Module):
     def reset_parameters(self):
         # i choosed initialitazion at random. Another one might be much better
         with torch.no_grad():
-            self.W.normal_(0, math.sqrt(4 / (self.in_sz + self.out_sz)))
+            torch.nn.init.orthogonal_(self.W)
             if self.bias:
                 self.b.fill_(0.)
 

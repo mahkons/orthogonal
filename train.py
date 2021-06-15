@@ -15,7 +15,7 @@ device = torch.device("cuda")
 @torch.no_grad()
 def normalize(module):
     if isinstance(module, OrthogonalHouseholder):
-        module.A /= torch.sqrt((module.A * module.A).sum(dim=1))
+        module.A /= torch.linalg.norm(module.A, dim=1)
 
 def get_orthogonal_regularization(module):
     if isinstance(module, MyLinear):
@@ -108,7 +108,7 @@ def train(model, train_data, test_data, epochs):
 
             rl = torch.zeros(1, device=device)
             for module in model.modules():
-                rl += 1e-2 * get_orthogonal_regularization(module)
+                rl += 1e-3 * get_orthogonal_regularization(module)
 
             optimizer.zero_grad()
             (loss + rl).backward()
@@ -146,9 +146,9 @@ if __name__ == "__main__":
     #  model = Classfier(28 * 28, 10, 64, simple_linear_factory, 6).to(device)
     #  model = Classfier(28 * 28, 10, 16, orthogonal_householder_abs_factory, 30).to(device)
     #  model = Classfier(28 * 28, 10, 16, orthogonal_householder_alternative_factory, 3).to(device)
-    model = Classfier(28 * 28, 10, 64, orthogonal_householder_myactivation_factory, 3).to(device)
+    #  model = Classfier(28 * 28, 10, 64, orthogonal_householder_myactivation_factory, 3).to(device)
     #  model = Classfier(28 * 28, 10, 64, mylinear_factory, 3).to(device)
-    #  model = Classfier(28 * 28, 10, 64, mylinear_myactivation_factory, 3).to(device)
+    model = Classfier(28 * 28, 10, 16, mylinear_myactivation_factory, 30).to(device)
 
     train(model, train_data, test_data, 50)
 

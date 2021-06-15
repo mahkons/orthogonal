@@ -67,6 +67,30 @@ class OrthogonalHouseholderAlternative(nn.Module):
         x = x - ((2 * B / self.diag) @ self.p)
         return x + self.b
 
+# orthogonally regualarization loss returning function added
+class MyLinear(nn.Module):
+    def __init__(self, in_sz, out_sz, bias=True):
+        super(MyLinear, self).__init__()
+        self.in_sz = in_sz
+        self.out_sz = out_sz
+        self.bias = bias
+
+        self.W = nn.Parameter(torch.empty((in_sz, out_sz)))
+        self.b = nn.Parameter(torch.empty(1, out_sz)) if bias else 0.
+        self.reset_parameters()
+
+    def forward(self, x):
+        return x @ self.W + self.b
+
+    def regularization(self):
+        return torch.linalg.norm(self.W @ self.W.T - torch.eye(self.in_sz, device=self.W.device)) + torch.linalg.norm(self.W.T - self.W - torch.eye(self.out_sz, device=self.W.device))
+
+    def reset_parameters(self):
+        # i choosed initialitazion at random. Another one might be much better
+        with torch.no_grad():
+            self.W.normal_(0, math.sqrt(4 / (self.in_sz + self.out_sz)))
+            if self.bias:
+                self.b.fill_(0.)
 
 # exponential
 

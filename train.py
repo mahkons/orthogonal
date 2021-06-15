@@ -4,6 +4,7 @@ import torch.nn.functional as F
 import torchvision
 import torchvision.transforms as T
 import time
+import PIL
 import math
 
 from orthogonal import OrthogonalHouseholder, OrthogonalHouseholderAlternative, MyLinear
@@ -23,6 +24,15 @@ def get_orthogonal_regularization(module):
     else:
         return 0.
 
+class RandomInvert(nn.Module):
+    def __init__(self, p=0.5):
+        super().__init__()
+        self.p = p
+
+    def forward(self, img):
+        if torch.rand(1).item() < self.p:
+            return PIL.ImageOps.invert(img)
+        return img
 
 class Classfier(nn.Module):
     def __init__(self, in_sz, out_sz, hidden_sz, hidden_layers_factory, hiddens_num):
@@ -139,7 +149,16 @@ def train(model, train_data, test_data, epochs):
 
 if __name__ == "__main__":
     transform = T.ToTensor()
-    train_data = torchvision.datasets.MNIST(root="./data", train=True, transform=transform, download=True)
+    much_regularized = T.Compose([
+        T.Pad(padding=4),
+        T.CenterCrop((28, 28)),
+        T.GaussianBlur(3),
+        T.RandomPerspective(),
+        T.RandomRotation(degrees=(0, 360)),
+        RandomInvert(),
+        T.ToTensor()
+    ])
+    train_data = torchvision.datasets.MNIST(root="./data", train=True, transform=much_regularized, download=True)
     test_data = torchvision.datasets.MNIST(root="./data", train=False, transform=transform, download=True)
 
     #  model = Classfier(28 * 28, 10, 64, simple_linear_factory, 3).to(device)
@@ -148,7 +167,7 @@ if __name__ == "__main__":
     #  model = Classfier(28 * 28, 10, 16, orthogonal_householder_alternative_factory, 3).to(device)
     #  model = Classfier(28 * 28, 10, 64, orthogonal_householder_myactivation_factory, 3).to(device)
     #  model = Classfier(28 * 28, 10, 64, mylinear_factory, 3).to(device)
-    model = Classfier(28 * 28, 10, 16, mylinear_myactivation_factory, 30).to(device)
+    model = Classfier(28 * 28, 10, 64, mylinear_myactivation_factory, 64).to(device)
 
     train(model, train_data, test_data, 50)
 

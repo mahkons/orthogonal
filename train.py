@@ -68,6 +68,9 @@ class ExpActivation(nn.Module):
 def simple_linear_factory(sz):
     return [nn.Linear(sz, sz, bias=True), nn.ReLU()]
 
+def simple_linear_myactivation_factory(sz):
+    return [nn.Linear(sz, sz, bias=True), MyActivation(1.2)]
+
 def orthogonal_householder_factory(sz):
     return [OrthogonalHouseholder(sz, bias=True), nn.ReLU()]
 
@@ -94,7 +97,7 @@ def mylinear_myactivation_factory(sz):
 
 
 def train(model, train_data, test_data, epochs):
-    optimizer = torch.optim.SGD(model.parameters(), lr=1e-3, momentum=0.9)
+    optimizer = torch.optim.SGD(model.parameters(), lr=1e-2, momentum=0.9)
     #  optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
     batch_size = 256
 
@@ -118,7 +121,7 @@ def train(model, train_data, test_data, epochs):
 
             rl = torch.zeros(1, device=device)
             for module in model.modules():
-                rl += 1e-3 * get_orthogonal_regularization(module)
+                rl += get_orthogonal_regularization(module)
 
             optimizer.zero_grad()
             (loss + rl).backward()
@@ -162,6 +165,7 @@ if __name__ == "__main__":
     test_data = torchvision.datasets.MNIST(root="./data", train=False, transform=transform, download=True)
 
     #  model = Classfier(28 * 28, 10, 64, simple_linear_factory, 3).to(device)
+    #  model = Classfier(28 * 28, 10, 64, simple_linear_myactivation_factory, 3).to(device)
     #  model = Classfier(28 * 28, 10, 64, simple_linear_factory, 6).to(device)
     #  model = Classfier(28 * 28, 10, 16, orthogonal_householder_abs_factory, 30).to(device)
     #  model = Classfier(28 * 28, 10, 16, orthogonal_householder_alternative_factory, 3).to(device)
@@ -169,5 +173,5 @@ if __name__ == "__main__":
     #  model = Classfier(28 * 28, 10, 64, mylinear_factory, 3).to(device)
     model = Classfier(28 * 28, 10, 64, mylinear_myactivation_factory, 64).to(device)
 
-    train(model, train_data, test_data, 50)
+    train(model, train_data, test_data, 1000)
 

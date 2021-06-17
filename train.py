@@ -95,6 +95,8 @@ def mylinear_factory(sz):
 def mylinear_myactivation_factory(sz):
     return [MyLinear(sz, sz, bias=True), MyActivation(1.2)]
 
+def mylinear_myactivation_nobias_factory(sz):
+    return [MyLinear(sz, sz, bias=False), MyActivation(1.2)]
 
 def train(model, train_data, test_data, epochs):
     optimizer = torch.optim.SGD(model.parameters(), lr=1e-2, momentum=0.9)
@@ -161,7 +163,7 @@ if __name__ == "__main__":
         RandomInvert(),
         T.ToTensor()
     ])
-    train_data = torchvision.datasets.MNIST(root="./data", train=True, transform=much_regularized, download=True)
+    train_data = torchvision.datasets.MNIST(root="./data", train=True, transform=transform, download=True)
     test_data = torchvision.datasets.MNIST(root="./data", train=False, transform=transform, download=True)
 
     #  model = Classfier(28 * 28, 10, 64, simple_linear_factory, 3).to(device)
@@ -171,7 +173,7 @@ if __name__ == "__main__":
     #  model = Classfier(28 * 28, 10, 16, orthogonal_householder_alternative_factory, 3).to(device)
     #  model = Classfier(28 * 28, 10, 64, orthogonal_householder_myactivation_factory, 3).to(device)
     #  model = Classfier(28 * 28, 10, 64, mylinear_factory, 3).to(device)
-    model = Classfier(28 * 28, 10, 64, mylinear_myactivation_factory, 64).to(device)
+    model = Classfier(28 * 28, 10, 64, mylinear_myactivation_nobias_factory, 3).to(device)
 
     train(model, train_data, test_data, 1000)
 

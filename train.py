@@ -98,17 +98,24 @@ def mylinear_myactivation_factory(sz):
 def mylinear_myactivation_nobias_factory(sz):
     return [MyLinear(sz, sz, bias=False), MyActivation(1.2)]
 
-def train(model, train_data, test_data, epochs):
+def train(model, train_data, test_data, epochs, load_checkpoint):
     optimizer = torch.optim.SGD(model.parameters(), lr=1e-2, momentum=0.9)
     #  optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
-    batch_size = 256
 
-    train_loader = torch.utils.data.DataLoader(dataset=train_data, batch_size=batch_size, shuffle=True)
-    test_loader = torch.utils.data.DataLoader(dataset=test_data, batch_size=batch_size, shuffle=False)
+    epoch_start = 1
+    if load_checkpoint:
+        checkpoint = torch.load("generated/checkpoint.torch")
+        model.load_state_dict(checkpoint["model"])
+        optimizer.load_state_dict(checkpoint["optimizer"])
+        epoch_start = checkpoint["epoch"] + 1
+
+    batch_size = 512
+    train_loader = torch.utils.data.DataLoader(dataset=train_data, batch_size=batch_size, shuffle=True, num_workers=4)
+    test_loader = torch.utils.data.DataLoader(dataset=test_data, batch_size=batch_size, shuffle=False, num_workers=4)
 
     start_time = time.time()
     it = 0
-    for epoch in range(epochs):
+    for epoch in range(epoch_start, epochs + 1):
         train_loss = 0.
         train_cnt = 0.
         reg_loss = 0.
@@ -149,6 +156,11 @@ def train(model, train_data, test_data, epochs):
         cur_time = time.time()
         print("Epoch {} Time {} TrainLoss {} RegLoss {} TestLoss {} TestAccuracy {}".format(
             epoch, cur_time - start_time, train_loss / train_cnt, reg_loss / train_iter, sum_loss / cnt, cnt_correct / cnt))
+        torch.save({
+            "epoch": epoch,
+            "model": model.state_dict(),
+            "optimizer": optimizer.state_dict(),
+        }, "generated/checkpoint.torch")
 
 
 
@@ -157,13 +169,19 @@ if __name__ == "__main__":
     much_regularized = T.Compose([
         T.Pad(padding=4),
         T.CenterCrop((28, 28)),
-        T.GaussianBlur(3),
+        T.RandomApply([
+            T.Pad(padding=4),
+            T.Resize((28, 28))
+        ]),
+        T.GaussianBlur(3, (1e-5, 3.0)),
+        T.RandomRotation(degrees=(-45, 45)), # 6 and 9 should remain distinguishable
         T.RandomPerspective(),
-        T.RandomRotation(degrees=(0, 360)),
         RandomInvert(),
-        T.ToTensor()
+        T.ToTensor(),
+        #  T.RandomErasing(p=0.5, scale=(1e-5, 0.02), ratio=(0.3, 3.3)),
+        #  T.RandomErasing(p=0.5, scale=(1e-5, 0.02), ratio=(0.3, 3.3)),
     ])
-    train_data = torchvision.datasets.MNIST(root="./data", train=True, transform=transform, download=True)
+    train_data = torchvision.datasets.MNIST(root="./data", train=True, transform=much_regularized, download=True)
     test_data = torchvision.datasets.MNIST(root="./data", train=False, transform=transform, download=True)
 
     #  model = Classfier(28 * 28, 10, 64, simple_linear_factory, 3).to(device)
@@ -173,7 +191,7 @@ if __name__ == "__main__":
     #  model = Classfier(28 * 28, 10, 16, orthogonal_householder_alternative_factory, 3).to(device)
     #  model = Classfier(28 * 28, 10, 64, orthogonal_householder_myactivation_factory, 3).to(device)
     #  model = Classfier(28 * 28, 10, 64, mylinear_factory, 3).to(device)
-    model = Classfier(28 * 28, 10, 64, mylinear_myactivation_nobias_factory, 3).to(device)
+    model = Classfier(28 * 28, 10, 1024, mylinear_myactivation_nobias_factory, 32).to(device)
 
-    train(model, train_data, test_data, 1000)
+    train(model, train_data, test_data, 10000, load_checkpoint=True)
 

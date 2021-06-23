@@ -4,7 +4,10 @@
 *.swp
 
 # data
-data
+data/
+
+# generated
+generated/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

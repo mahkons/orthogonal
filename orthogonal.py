@@ -83,6 +83,9 @@ class MyLinear(nn.Module):
         return x @ self.W + self.b
 
     def regularization(self):
+        if self.in_sz == self.out_sz:
+            return 2 * ((self.W @ self.W.T - torch.eye(self.in_sz, device=self.W.device)) ** 2).sum()
+
         return ((self.W @ self.W.T - torch.eye(self.in_sz, device=self.W.device)) ** 2).sum() + ((self.W.T @ self.W - torch.eye(self.out_sz, device=self.W.device)) ** 2).sum()
 
     def reset_parameters(self):
